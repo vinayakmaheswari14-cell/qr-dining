@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Start Backend Server",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server/index.js",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal",
+      "restart": true,
+      "runtimeExecutable": "node",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Seed Database",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server/customSeedData.js",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Update Database",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server/updateDatabase.js",
+      "console": "integratedTerminal"
+    }
+  ]
+}
