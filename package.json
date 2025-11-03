@@ -4,6 +4,7 @@
   "description": "Restaurant QR Menu System",
   "main": "server/index.js",
   "scripts": {
+    "start": "cd client && npm start",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server/index.js",
     "client": "cd client && npm start",
@@ -11,12 +12,8 @@
     "install-client": "cd client && npm install",
     "install-server": "npm install",
     "install-all": "npm run install-server && npm run install-client",
-    "seed": "node server/customSeedData.js",
-    "db-stats": "node server/updateDatabase.js",
-    "list-menu": "node server/quickUpdates.js",
-    "create-demo": "node server/createDemoTable.js",
+    "seed": "node server/seedDatabase.js",
     "setup": "node scripts/setup.js",
-    "check": "node debug-check.js",
     "fix": "node fix-menu.js",
     "cleanup": "node server/cleanupDatabase.js",
     "test-order": "node server/createTestOrder.js"

@@ -112,6 +112,23 @@ const Register = () => {
           >
             {loading ? 'Registering...' : 'Register'}
           </Button>
+          
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Button
+              variant="text"
+              onClick={() => navigate('/login')}
+              sx={{ fontSize: '0.8rem', textTransform: 'none', mr: 2 }}
+            >
+              Already have an account?
+            </Button>
+            <Button
+              variant="text"
+              onClick={() => navigate('/forgot-password')}
+              sx={{ fontSize: '0.8rem', textTransform: 'none' }}
+            >
+              Forgot Password?
+            </Button>
+          </Box>
         </Box>
       </Paper>
     </Container>

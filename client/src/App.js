@@ -10,14 +10,14 @@ import Home from './pages/Home';
 import MenuPage from './pages/MenuPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import AdminDashboard from './pages/AdminDashboard';
 import StaffDashboard from './pages/StaffDashboard';
 import OrderStatus from './pages/OrderStatus';
 import OrderSuccess from './pages/OrderSuccess';
-import OrderTest from './pages/OrderTest';
-import TestPage from './pages/TestPage';
+
 import DatabaseViewer from './pages/DatabaseViewer';
 
 const theme = createTheme({
@@ -45,11 +45,11 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/m/:slug" element={<MenuPage />} />
               <Route path="/order-status/:orderId" element={<OrderStatus />} />
               <Route path="/order-success/:orderId" element={<OrderSuccess />} />
-              <Route path="/order-test" element={<OrderTest />} />
-              <Route path="/test" element={<TestPage />} />
+
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/staff" element={<StaffDashboard />} />
               <Route path="/database" element={<DatabaseViewer />} />

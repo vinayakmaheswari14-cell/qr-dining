@@ -22,6 +22,22 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['customer', 'staff', 'admin'],
     default: 'customer'
+  },
+  resetPasswordToken: {
+    type: String,
+    default: null
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: null
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

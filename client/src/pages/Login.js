@@ -79,6 +79,16 @@ const Login = () => {
           >
             {loading ? 'Logging in...' : 'Login'}
           </Button>
+          
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Button
+              variant="text"
+              onClick={() => navigate('/forgot-password')}
+              sx={{ fontSize: '0.8rem', textTransform: 'none' }}
+            >
+              Forgot your password?
+            </Button>
+          </Box>
         </Box>
       </Paper>
     </Container>

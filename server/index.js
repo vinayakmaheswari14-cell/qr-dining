@@ -9,6 +9,7 @@ const menuRoutes = require('./routes/menu');
 const tableRoutes = require('./routes/tables');
 const orderRoutes = require('./routes/orders');
 const debugRoutes = require('./routes/debug');
+const couponRoutes = require('./routes/coupons');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/tables', tableRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/coupons', couponRoutes);
 app.use('/api/debug', debugRoutes);
 
 // MongoDB connection

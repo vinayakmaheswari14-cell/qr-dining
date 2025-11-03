@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Typography, Grid, Card, CardContent, CardMedia, Button, Chip, Box, TextField, Drawer, List, ListItem, ListItemText, IconButton, Badge, Paper, Divider, CardActions, Alert } from '@mui/material';
-import { Add, Remove, ShoppingCart, Restaurant, Star } from '@mui/icons-material';
+import { Add, Remove, ShoppingCart, Restaurant, Star, LocalOffer, Close } from '@mui/icons-material';
 import axios from 'axios';
 import { useCart } from '../contexts/CartContext';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -16,7 +16,14 @@ const MenuPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
   const [orderPlacing, setOrderPlacing] = useState(false);
-  const { cart, tableInfo, setTableInfo, addToCart, updateCartItem, removeFromCart, getCartTotal, clearCart } = useCart();
+  const [couponCode, setCouponCode] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState('');
+  const { 
+    cart, tableInfo, setTableInfo, addToCart, updateCartItem, removeFromCart, 
+    getCartSubtotal, getCartTotal, clearCart, appliedCoupon, discountAmount, 
+    applyCoupon, removeCoupon 
+  } = useCart();
 
   useEffect(() => {
     fetchMenuData();
@@ -42,21 +49,62 @@ const MenuPage = () => {
     return matchesCategory && matchesSearch;
   }) || [];
 
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError('');
+
+    try {
+      const response = await axios.post('/api/coupons/validate', {
+        code: couponCode,
+        orderAmount: getCartSubtotal()
+      });
+
+      if (response.data.valid) {
+        applyCoupon(response.data.coupon, response.data.discount);
+        setCouponCode('');
+        setCouponError('');
+      }
+    } catch (error) {
+      setCouponError(error.response?.data?.message || 'Invalid coupon code');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
   const placeOrder = async () => {
     try {
       setOrderPlacing(true);
       const orderItems = cart.map(item => ({
         menuItemId: item.id,
         quantity: item.quantity,
-        note: item.note
+        note: item.note,
+        price: item.price
       }));
 
-      const response = await axios.post('/api/orders', {
+      const orderData = {
         tableId: tableInfo.id,
-        items: orderItems
-      });
+        items: orderItems,
+        subtotal: getCartSubtotal(),
+        total: getCartTotal(),
+        couponCode: appliedCoupon?.code || null,
+        discountAmount: discountAmount || 0
+      };
 
-      // Clear cart and redirect to order success page
+      // Apply coupon if one is selected
+      if (appliedCoupon) {
+        await axios.post('/api/coupons/apply', {
+          code: appliedCoupon.code,
+          orderAmount: getCartSubtotal()
+        });
+      }
+
+      const response = await axios.post('/api/orders', orderData);
+
       clearCart();
       setCartOpen(false);
       navigate(`/order-success/${response.data._id}`);
@@ -366,35 +414,124 @@ const MenuPage = () => {
 
           {/* Cart Footer */}
           {cart.length > 0 && (
-            <Paper elevation={3} sx={{ p: 2 }}>
-              <Divider sx={{ mb: 1.5 }} />
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                  Total:
+            <Box sx={{ p: 2, borderTop: '1px solid #f0f0f0' }}>
+              {/* Coupon Section */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <LocalOffer sx={{ fontSize: '1.2rem', color: '#ff9800' }} />
+                  Apply Coupon
                 </Typography>
-                <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
-                  ₹{getCartTotal()}
-                </Typography>
+                
+                {!appliedCoupon ? (
+                  <Box>
+                    <Box display="flex" gap={1} mb={1}>
+                      <TextField
+                        size="small"
+                        placeholder="Enter coupon code"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        sx={{ flex: 1 }}
+                        error={!!couponError}
+                      />
+                      <Button
+                        variant="outlined"
+                        onClick={validateCoupon}
+                        disabled={couponLoading}
+                        sx={{ minWidth: 80 }}
+                      >
+                        {couponLoading ? '...' : 'Apply'}
+                      </Button>
+                    </Box>
+                    {couponError && (
+                      <Typography variant="caption" color="error" sx={{ fontSize: '0.75rem' }}>
+                        {couponError}
+                      </Typography>
+                    )}
+                    <Typography variant="caption" sx={{ color: '#666', fontSize: '0.75rem' }}>
+                      Try: WELCOME10, SAVE20, MEGA50, or FLAT100
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box sx={{ bgcolor: '#e8f5e8', p: 2, borderRadius: 2, border: '1px solid #4caf50' }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#2e7d32' }}>
+                          {appliedCoupon.code}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#666' }}>
+                          {appliedCoupon.description}
+                        </Typography>
+                      </Box>
+                      <Box textAlign="right">
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#2e7d32' }}>
+                          -₹{discountAmount}
+                        </Typography>
+                        <IconButton size="small" onClick={removeCoupon} sx={{ ml: 1 }}>
+                          <Close sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </Box>
+                )}
               </Box>
+
+              {/* Order Summary */}
+              <Box sx={{ mb: 2 }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                  <Typography variant="body2" sx={{ color: '#666' }}>
+                    Subtotal:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    ₹{getCartSubtotal()}
+                  </Typography>
+                </Box>
+                
+                {appliedCoupon && (
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                    <Typography variant="body2" sx={{ color: '#2e7d32' }}>
+                      Discount ({appliedCoupon.code}):
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#2e7d32' }}>
+                      -₹{discountAmount}
+                    </Typography>
+                  </Box>
+                )}
+                
+                <Divider sx={{ my: 1 }} />
+                
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    Total:
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: '#2e7d32' }}>
+                    ₹{getCartTotal()}
+                  </Typography>
+                </Box>
+              </Box>
+
               <Button
                 variant="contained"
                 fullWidth
-                size="medium"
+                size="large"
                 onClick={placeOrder}
                 disabled={orderPlacing}
-                sx={{ 
-                  py: 1.2,
-                  borderRadius: 2,
-                  fontSize: '0.9rem',
+                sx={{
+                  py: 1.5,
+                  borderRadius: 3,
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  textTransform: 'none',
                   background: 'linear-gradient(45deg, #4CAF50 30%, #45a049 90%)',
+                  boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
                   '&:hover': {
                     background: 'linear-gradient(45deg, #45a049 30%, #4CAF50 90%)',
+                    boxShadow: '0 8px 25px rgba(76, 175, 80, 0.4)'
                   }
                 }}
               >
-                {orderPlacing ? '⏳ Placing Order...' : '🍽️ Place Order'}
+                {orderPlacing ? 'Placing Order...' : 'Place Order'}
               </Button>
-            </Paper>
+            </Box>
           )}
         </Box>
       </Drawer>

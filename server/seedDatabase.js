@@ -3,34 +3,39 @@ const User = require('./models/User');
 const MenuCategory = require('./models/MenuCategory');
 const MenuItem = require('./models/MenuItem');
 const Table = require('./models/Table');
+const Coupon = require('./models/Coupon');
 require('dotenv').config();
 
-const seedData = async () => {
+const seedDatabase = async () => {
     try {
         await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/scan-dine-lite');
-
+        
         // Clear existing data
         await User.deleteMany({});
         await MenuCategory.deleteMany({});
         await MenuItem.deleteMany({});
         await Table.deleteMany({});
+        await Coupon.deleteMany({});
 
         console.log('Cleared existing data...');
 
         // Create admin user
+        const bcrypt = require('bcryptjs');
+        const adminPassword = await bcrypt.hash('admin123', 10);
         const admin = new User({
             name: 'Admin User',
             email: 'admin@restaurant.com',
-            passwordHash: 'admin123',
+            passwordHash: adminPassword,
             role: 'admin'
         });
         await admin.save();
 
         // Create staff user
+        const staffPassword = await bcrypt.hash('staff123', 10);
         const staff = new User({
             name: 'Staff Member',
             email: 'staff@restaurant.com',
-            passwordHash: 'staff123',
+            passwordHash: staffPassword,
             role: 'staff'
         });
         await staff.save();
@@ -89,7 +94,7 @@ const seedData = async () => {
                 tags: ['vegetarian', 'crispy', 'chinese'],
                 imageUrl: 'https://i.pinimg.com/736x/74/55/86/7455861056a201b44b68a5ef65e36583.jpg'
             },
-
+            
             // Main Courses
             {
                 name: 'Dal Makhani',
@@ -166,7 +171,6 @@ const seedData = async () => {
                 availability: true,
                 tags: ['cold', 'creamy', 'traditional'],
                 imageUrl: 'https://i.pinimg.com/1200x/8b/be/31/8bbe312b36c8a2a8d23cf63bc1c32d4b.jpg'
-
             }
         ];
 
@@ -195,24 +199,89 @@ const seedData = async () => {
 
         console.log('Created tables...');
 
-        console.log('✅ New seed data created successfully!');
+        // Create sample coupons
+        const coupons = [
+            {
+                code: 'WELCOME10',
+                description: 'Welcome discount - 10% off on your first order',
+                discountType: 'percentage',
+                discountValue: 10,
+                minimumOrderAmount: 200,
+                maximumDiscountAmount: 100,
+                usageLimit: 100
+            },
+            {
+                code: 'SAVE20',
+                description: 'Save 20% on orders above ₹500',
+                discountType: 'percentage',
+                discountValue: 20,
+                minimumOrderAmount: 500,
+                maximumDiscountAmount: 200,
+                usageLimit: 50
+            },
+            {
+                code: 'BIGSAVE30',
+                description: 'Big Save - 30% off on orders above ₹800',
+                discountType: 'percentage',
+                discountValue: 30,
+                minimumOrderAmount: 800,
+                maximumDiscountAmount: 300,
+                usageLimit: 25
+            },
+            {
+                code: 'MEGA50',
+                description: 'Mega discount - 50% off on orders above ₹1000',
+                discountType: 'percentage',
+                discountValue: 50,
+                minimumOrderAmount: 1000,
+                maximumDiscountAmount: 500,
+                usageLimit: 10
+            },
+            {
+                code: 'FREEMEAL',
+                description: 'Special 100% discount - Free meal!',
+                discountType: 'percentage',
+                discountValue: 100,
+                minimumOrderAmount: 0,
+                maximumDiscountAmount: 2000,
+                usageLimit: 5
+            },
+            {
+                code: 'FLAT100',
+                description: 'Flat ₹100 off on any order',
+                discountType: 'fixed',
+                discountValue: 100,
+                minimumOrderAmount: 300,
+                usageLimit: 30
+            }
+        ];
+
+        for (const couponData of coupons) {
+            const coupon = new Coupon(couponData);
+            await coupon.save();
+        }
+
+        console.log('Created coupons...');
+
+        console.log('✅ Database seeded successfully!');
         console.log('📊 Created:');
         console.log('   - 2 Users (admin, staff)');
         console.log('   - 4 Categories');
         console.log('   - 10 Menu Items with images');
         console.log('   - 10 Tables');
+        console.log('   - 6 Coupons');
         console.log('');
         console.log('🔑 Login credentials:');
         console.log('   Admin: admin@restaurant.com / admin123');
         console.log('   Staff: staff@restaurant.com / staff123');
         console.log('');
         console.log('🍽️ Demo menu: http://localhost:3000/m/demo-table');
-
+        
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error seeding data:', error);
+        console.error('❌ Error seeding database:', error);
         process.exit(1);
     }
 };
 
-seedData();
+seedDatabase();

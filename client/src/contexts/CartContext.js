@@ -13,6 +13,8 @@ export const useCart = () => {
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [tableInfo, setTableInfo] = useState(null);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
 
   const addToCart = (item, quantity = 1, note = '') => {
     setCart(prevCart => {
@@ -59,10 +61,27 @@ export const CartProvider = ({ children }) => {
   const clearCart = () => {
     setCart([]);
     setTableInfo(null);
+    setAppliedCoupon(null);
+    setDiscountAmount(0);
+  };
+
+  const getCartSubtotal = () => {
+    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
   const getCartTotal = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const subtotal = getCartSubtotal();
+    return Math.max(0, subtotal - discountAmount);
+  };
+
+  const applyCoupon = (coupon, discount) => {
+    setAppliedCoupon(coupon);
+    setDiscountAmount(discount);
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setDiscountAmount(0);
   };
 
   const getCartItemCount = () => {
@@ -77,8 +96,13 @@ export const CartProvider = ({ children }) => {
     updateCartItem,
     removeFromCart,
     clearCart,
+    getCartSubtotal,
     getCartTotal,
-    getCartItemCount
+    getCartItemCount,
+    appliedCoupon,
+    discountAmount,
+    applyCoupon,
+    removeCoupon
   };
 
   return (

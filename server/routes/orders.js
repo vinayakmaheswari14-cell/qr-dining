@@ -8,11 +8,11 @@ const router = express.Router();
 // Place order (customer or guest)
 router.post('/', async (req, res) => {
   try {
-    const { tableId, items, customerNote } = req.body;
+    const { tableId, items, customerNote, subtotal, total, couponCode, discountAmount } = req.body;
     
-    // Calculate totals
-    let subtotal = 0;
+    // Validate and prepare order items
     const orderItems = [];
+    let calculatedSubtotal = 0;
 
     for (const item of items) {
       const menuItem = await MenuItem.findById(item.menuItemId);
@@ -22,14 +22,16 @@ router.post('/', async (req, res) => {
         });
       }
 
-      const itemTotal = menuItem.price * item.quantity;
-      subtotal += itemTotal;
+      // Use the price from the request to ensure consistency
+      const itemPrice = item.price || menuItem.price;
+      const itemTotal = itemPrice * item.quantity;
+      calculatedSubtotal += itemTotal;
 
       orderItems.push({
         menuItemId: item.menuItemId,
         quantity: item.quantity,
         note: item.note || '',
-        price: menuItem.price
+        price: itemPrice
       });
 
       // Update popularity
@@ -37,16 +39,19 @@ router.post('/', async (req, res) => {
       await menuItem.save();
     }
 
-    const tax = subtotal * 0.08; // 8% tax
-    const total = subtotal + tax;
+    // Use provided totals or calculate them
+    const finalSubtotal = subtotal || calculatedSubtotal;
+    const finalTotal = total || finalSubtotal;
 
     const order = new Order({
       tableId,
       customerId: req.user?.id || null,
       items: orderItems,
-      subtotal,
-      tax,
-      total,
+      subtotal: finalSubtotal,
+      tax: 0, // No tax for now
+      total: finalTotal,
+      couponCode: couponCode || null,
+      discountAmount: discountAmount || 0,
       customerNote: customerNote || ''
     });
 
