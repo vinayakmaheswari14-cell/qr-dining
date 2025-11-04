@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const { sendPasswordResetEmail, sendWelcomeEmail } = require('../utils/emailService');
 
 const router = express.Router();
 
@@ -24,6 +25,13 @@ router.post('/register', async (req, res) => {
     });
 
     await user.save();
+
+    // Send welcome email (optional - don't block registration if email fails)
+    try {
+      await sendWelcomeEmail(user.email, user.name);
+    } catch (emailError) {
+      console.log('Welcome email failed to send:', emailError.message);
+    }
 
     const token = jwt.sign(
       { userId: user._id, role: user.role },
@@ -130,16 +138,36 @@ router.post('/forgot-password', async (req, res) => {
       used: false
     });
 
-    // In a real application, you would send this code via email
-    // For demo purposes, we'll return it in the response
-    console.log(`Password reset code for ${email}: ${resetToken}`);
-
-    res.json({
-      message: 'Password reset code has been sent to your email.',
-      success: true,
-      // Remove this in production - only for demo
-      resetCode: resetToken
-    });
+    // Send password reset email
+    try {
+      const emailResult = await sendPasswordResetEmail(user.email, resetToken, user.name);
+      
+      if (emailResult.success) {
+        console.log(`Password reset email sent successfully to ${email}`);
+        res.json({
+          message: 'Password reset code has been sent to your email.',
+          success: true
+        });
+      } else {
+        console.error('Failed to send password reset email:', emailResult.error);
+        // Still return success for security, but log the error
+        res.json({
+          message: 'Password reset code has been sent to your email.',
+          success: true,
+          // For development - show the code if email fails
+          resetCode: process.env.NODE_ENV === 'development' ? resetToken : undefined
+        });
+      }
+    } catch (emailError) {
+      console.error('Error sending password reset email:', emailError);
+      // Don't fail the request if email fails - show code for development
+      res.json({
+        message: 'Password reset code has been sent to your email.',
+        success: true,
+        // For development - show the code if email fails
+        resetCode: process.env.NODE_ENV === 'development' ? resetToken : undefined
+      });
+    }
 
   } catch (error) {
     console.error('Error requesting password reset:', error);
